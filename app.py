@@ -179,4 +179,4 @@ if __name__ == '__main__':
     os.makedirs('templates', exist_ok=True)
     os.makedirs('apks', exist_ok=True)
     print(f"[+] ONYX Server starting on port {PORT}")
-    socketio.run(app, host='0.0.0.0', port=PORT, debug=False)
+    socketio.run(app, host="0.0.0.0", port=PORT, debug=False, allow_unsafe_wsgi=True)
