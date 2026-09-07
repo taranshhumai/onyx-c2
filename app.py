@@ -30,7 +30,6 @@ app.secret_key = SECRET_KEY
 app.permanent_session_lifetime = timedelta(days=7)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# -------- FIXED: Limiter without positional app, then init_app --------
 limiter = Limiter(key_func=get_remote_address, default_limits=["200 per day", "50 per hour"])
 limiter.init_app(app)
 
@@ -179,4 +178,4 @@ if __name__ == '__main__':
     os.makedirs('templates', exist_ok=True)
     os.makedirs('apks', exist_ok=True)
     print(f"[+] ONYX Server starting on port {PORT}")
-    socketio.run(app, host="0.0.0.0", port=PORT, debug=False, allow_unsafe_wsgi=True)
+    socketio.run(app, host='0.0.0.0', port=PORT, debug=False, allow_unsafe_wsgi=True)
