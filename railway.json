@@ -1,4 +1,1 @@
-{
-  "build": { "builder": "NIXPACKS" },
-  "startCommand": "python app.py"
-}
+{"startCommand": "python test.py"}
