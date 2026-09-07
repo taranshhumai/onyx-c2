@@ -1,4 +1,1 @@
 Flask==2.3.3
-Flask-SocketIO==5.3.4
-python-socketio==5.9.0
-Werkzeug==2.3.8
