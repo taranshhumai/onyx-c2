@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, json, sqlite3, logging, time
+import os, json, sqlite3, logging
 from flask import Flask, render_template_string, request, session, redirect, url_for, send_file
 from flask_socketio import SocketIO, emit
 from datetime import datetime, timezone, timedelta
@@ -10,10 +10,10 @@ ADMIN_USER = os.environ.get('ADMIN_USER')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
 API_KEY = os.environ.get('API_KEY')
 SECRET_KEY = os.environ.get('SECRET_KEY')
-CORS_ORIGIN = os.environ.get('CORS_ORIGIN', 'https://onyx-production-8026.up.railway.app')
+CORS_ORIGIN = os.environ.get('CORS_ORIGIN', 'https://onyx-c2-production.up.railway.app')
 
 if not all([ADMIN_USER, ADMIN_PASSWORD, API_KEY, SECRET_KEY]):
-    raise RuntimeError("Missing required env")
+    raise RuntimeError("Missing required env: ADMIN_USER, ADMIN_PASSWORD, API_KEY, SECRET_KEY")
 
 PORT = int(os.environ.get('PORT', 5000))
 
@@ -25,7 +25,7 @@ app.secret_key = SECRET_KEY
 app.permanent_session_lifetime = timedelta(days=7)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-socketio = SocketIO(app, cors_allowed_origins=CORS_ORIGIN, async_mode='threading')
+socketio = SocketIO(app, cors_allowed_origins=CORS_ORIGIN, async_mode='eventlet')
 
 def get_db():
     return sqlite3.connect('/tmp/onyx.db', check_same_thread=False)
@@ -155,4 +155,4 @@ if __name__ == '__main__':
     os.makedirs('templates', exist_ok=True)
     os.makedirs('apks', exist_ok=True)
     print(f"[+] ONYX Server starting on port {PORT}")
-    socketio.run(app, host='0.0.0.0', port=PORT, debug=False, allow_unsafe_wsgi=True)
+    socketio.run(app, host='0.0.0.0', port=PORT, debug=False)
